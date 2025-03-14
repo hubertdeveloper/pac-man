@@ -1,8 +1,15 @@
 body {
     margin: 0;
     background-color: #f0f0f0;
+    font-family: Arial, sans-serif;
 }
 
 #gameCanvas {
     border: 1px solid black;
+}
+
+#score {
+    margin-top: 10px;
+    font-size: 18px;
+    text-align: center;
 }
