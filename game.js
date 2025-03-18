@@ -2,14 +2,22 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreElement = document.getElementById('score');
+const gameOverElement = document.getElementById('gameOver');
 
-// Ustawienia gry
+// Ustawienia Pac-Mana
 const pacManSize = 20;
 let pacManX = pacManSize / 2;
 let pacManY = pacManSize / 2;
 let pacManSpeed = 2;
 let pacManDirection = 'right';
 let score = 0;
+
+// Ustawienia ducha (przeciwnika)
+let ghostX = canvas.width - pacManSize / 2;
+let ghostY = canvas.height - pacManSize / 2;
+let ghostSpeed = 2;
+let ghostDirection = 'left';
+let gameOver = false;
 
 // Utwórz prostą planszę (20x20)
 const tileCount = 20;
@@ -20,7 +28,7 @@ const points = [];
 for (let i = 0; i < tileCount; i++) {
     points[i] = [];
     for (let j = 0; j < tileCount; j++) {
-        points[i][j] = true; // początkowo wszystkie punkty są dostępne
+        points[i][j] = true; // wszystkie punkty dostępne na początku
     }
 }
 
@@ -32,7 +40,15 @@ function drawPacMan() {
     ctx.fill();
 }
 
-// Funkcja rysowania punktów na planszy
+// Funkcja rysująca ducha
+function drawGhost() {
+    ctx.fillStyle = 'red';
+    ctx.beginPath();
+    ctx.arc(ghostX, ghostY, pacManSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+// Funkcja rysująca punkty do zebrania
 function drawPoints() {
     ctx.fillStyle = 'black';
     for (let i = 0; i < tileCount; i++) {
@@ -70,25 +86,51 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// Funkcja losowego ruchu ducha
+function moveGhost() {
+    const directions=['up','down','left','right'];
+    
+    if(Math.random()<0.05){ // losowa zmiana kierunku z prawdopodobieństwem ~5%
+        ghostDirection=directions[Math.floor(Math.random()*directions.length)];
+    }
+
+    switch(ghostDirection){
+        case'up':ghostY-=ghostSpeed;break;
+        case'down':ghostY+=ghostSpeed;break;
+        case'left':ghostX-=ghostSpeed;break;
+        case'right':ghostX+=ghostSpeed;break;
+    }
+
+
+    // Zapobiegaj wyjściu ducha poza ekran
+    if(ghostX<pacManSize/2) ghostX=pacManSize/2;
+    if(ghostX>canvas.width-pacManSize/2) ghostX=canvas.width-pacManSize/2;
+    if(ghostY<pacManSize/2) ghostY=pacManSize/2;
+    if(ghostY>canvas.height-pacManSize/2) ghostY=canvas.height-pacManSize/2;  
+}
+
+// Sprawdzenie kolizji Pac-Mana z duchem
+function checkCollision(){
+    const distance=Math.sqrt((pacManX-ghostX)**2+(pacManY-ghostY)**2);
+    if(distance<pacManSize*0.8){
+       gameOver=true; 
+       gameOverElement.style.display='block'; // pokaż komunikat końca gry
+    }
+ }
+
 // Funkcja aktualizacji gry
-function updateGame() {
+function updateGame(){
+    if(gameOver)return;
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Aktualizuj pozycję Pac-Mana
-    switch (pacManDirection) {
-        case 'up':
-            pacManY -= pacManSpeed;
-            break;
-        case 'down':
-            pacManY += pacManSpeed;
-            break;
-        case 'left':
-            pacManX -= pacManSpeed;
-            break;
-        case 'right':
-            pacManX += pacManSpeed;
-            break;
-    }
+    // Aktualizacja pozycji Pac-Mana zgodnie z kierunkiem ruchu
+   switch(pacManDirection){
+    case'up':pacManY-=pacManSpeed;break;
+    case'down':pacManY+=pacManSpeed;break;
+    case'left':pacManX-=pacManSpeed;break;
+    case'right':pacManX+=pacManSpeed;break;}
+
 
     // Zapobiegaj wyjściu poza ekran
     if (pacManX < pacManSize / 2) pacManX = pacManSize / 2;
@@ -106,9 +148,11 @@ function updateGame() {
         scoreElement.textContent = `Punkty: ${score}`;
     }
 
+    moveGhost();
+    checkCollision();
     drawPoints();
     drawPacMan();
-
+    drawGhost();
     requestAnimationFrame(updateGame);
 }
 
